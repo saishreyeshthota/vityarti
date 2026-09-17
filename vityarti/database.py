@@ -1,20 +1,31 @@
-"""
-database.py
-Database initialization, schema creation, connection manager, and realistic seed data
-for the CampusBite Canteen Management System.
-"""
-
 import sqlite3
 import os
+import shutil
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
 
+# Detect if running in Vercel or serverless read-only environment
+IS_SERVERLESS = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
 DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "canteen.db")
+
+def get_active_db_path(custom_path=None):
+    if custom_path:
+        return custom_path
+    if IS_SERVERLESS:
+        tmp_db = "/tmp/canteen.db"
+        bundled_db = DEFAULT_DB_PATH
+        if not os.path.exists(tmp_db) and os.path.exists(bundled_db):
+            try:
+                shutil.copy2(bundled_db, tmp_db)
+            except Exception:
+                pass
+        return tmp_db
+    return DEFAULT_DB_PATH
 
 
 def get_db_connection(db_path=None):
     """Returns a SQLite database connection with row factory set to sqlite3.Row."""
-    path = db_path or DEFAULT_DB_PATH
+    path = get_active_db_path(db_path)
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -23,7 +34,8 @@ def get_db_connection(db_path=None):
 
 def init_db(db_path=None):
     """Initializes the database schema and populates seed data if empty."""
-    conn = get_db_connection(db_path)
+    path = get_active_db_path(db_path)
+    conn = get_db_connection(path)
     cursor = conn.cursor()
 
     # 1. Users table

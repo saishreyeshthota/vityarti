@@ -12,7 +12,12 @@ from routes_menu import menu_bp
 from routes_order import order_bp
 from routes_admin import admin_bp
 
-app = Flask(__name__, static_folder="static", template_folder="templates")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(
+    __name__,
+    static_folder=os.path.join(BASE_DIR, "static"),
+    template_folder=os.path.join(BASE_DIR, "templates")
+)
 app.secret_key = os.environ.get("SECRET_KEY", "campusbite_super_secret_session_key_2026")
 
 # Register API blueprints
